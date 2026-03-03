@@ -41,13 +41,20 @@ export async function getNextVersion(): Promise<VersionInfo> {
   let from: string
 
   try {
-    const tag = git('describe', '--tags', '--abbrev=0', '--match', 'v*')
+    const tag = git('describe', '--tags', '--abbrev=0', '--match', 'v*', 'origin/release')
     current = tag.replace(/^v/, '')
     from = tag
   } catch {
-    // No reachable tags — start from the initial commit
-    current = '0.0.0'
-    from = git('rev-list', '--max-parents=0', 'HEAD')
+    try {
+      // Fallback: check tags reachable from HEAD (works in local dev)
+      const tag = git('describe', '--tags', '--abbrev=0', '--match', 'v*')
+      current = tag.replace(/^v/, '')
+      from = tag
+    } catch {
+      // No reachable tags — start from the initial commit
+      current = '0.0.0'
+      from = git('rev-list', '--max-parents=0', 'HEAD')
+    }
   }
 
   // Collect commit subjects since last tag (exclude merges)
